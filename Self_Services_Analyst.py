@@ -1,26 +1,21 @@
 from typing import Any, Dict, List, Optional
-from dotenv import load_dotenv
-import os
 import pandas as pd
 import requests
 import snowflake.connector
 import streamlit as st
 
-
-# Load environment variables
-load_dotenv()
-
-# Retrieve variables from the environment
-HOST = os.getenv("HOST")
-DATABASE = os.getenv("DATABASE")
-SCHEMA = os.getenv("SCHEMA")
-STAGE = os.getenv("STAGE")
-FILE = os.getenv("FILE")
-USER = os.getenv("USER")
-PASSWORD = os.getenv("PASSWORD")
-ACCOUNT = os.getenv("ACCOUNT")
-WAREHOUSE = os.getenv("WAREHOUSE")
-ROLE = os.getenv("ROLE")
+# Retrieve variables from Streamlit secrets
+db_config = st.secrets["database"]
+HOST = db_config["host"]
+DATABASE = db_config["database"]
+SCHEMA = db_config["schema"]
+STAGE = db_config["stage"]
+FILE = db_config["file"]
+USER = db_config["user"]
+PASSWORD = db_config["password"]
+ACCOUNT = db_config["account"]
+WAREHOUSE = db_config["warehouse"]
+ROLE = db_config["role"]
 
 # Establish Snowflake connection if not present
 if 'CONN' not in st.session_state or st.session_state.CONN is None:
@@ -33,7 +28,6 @@ if 'CONN' not in st.session_state or st.session_state.CONN is None:
         warehouse=WAREHOUSE,
         role=ROLE,
     )
-
 
 def send_message(prompt: str) -> Dict[str, Any]:
     """Calls the REST API and returns the response."""
@@ -51,12 +45,11 @@ def send_message(prompt: str) -> Dict[str, Any]:
     )
     request_id = resp.headers.get("X-Snowflake-Request-Id")
     if resp.status_code < 400:
-        return {**resp.json(), "request_id": request_id}  
+        return {**resp.json(), "request_id": request_id}
     else:
         raise Exception(
             f"Failed request (id: {request_id}) with status {resp.status_code}: {resp.text}"
         )
-
 
 def process_message(prompt: str) -> None:
     """Processes a message and adds the response to the chat."""
@@ -74,7 +67,6 @@ def process_message(prompt: str) -> None:
     st.session_state.messages.append(
         {"role": "assistant", "content": content, "request_id": request_id}
     )
-
 
 def display_content(
     content: List[Dict[str, str]],
@@ -113,7 +105,6 @@ def display_content(
                             st.bar_chart(df)
                     else:
                         st.dataframe(df)
-
 
 st.title("Self Services Analyst")
 st.markdown(f"Semantic Model: `{FILE}`")
