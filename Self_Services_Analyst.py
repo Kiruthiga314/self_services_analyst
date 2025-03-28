@@ -22,6 +22,7 @@ ACCOUNT = os.getenv("ACCOUNT")
 WAREHOUSE = os.getenv("WAREHOUSE")
 ROLE = os.getenv("ROLE")
 
+# Establish Snowflake connection if not present
 if 'CONN' not in st.session_state or st.session_state.CONN is None:
     st.session_state.CONN = snowflake.connector.connect(
         user=USER,
@@ -50,7 +51,7 @@ def send_message(prompt: str) -> Dict[str, Any]:
     )
     request_id = resp.headers.get("X-Snowflake-Request-Id")
     if resp.status_code < 400:
-        return {**resp.json(), "request_id": request_id}  # type: ignore[arg-type]
+        return {**resp.json(), "request_id": request_id}  
     else:
         raise Exception(
             f"Failed request (id: {request_id}) with status {resp.status_code}: {resp.text}"
@@ -69,7 +70,7 @@ def process_message(prompt: str) -> None:
             response = send_message(prompt=prompt)
             request_id = response["request_id"]
             content = response["message"]["content"]
-            display_content(content=content, request_id=request_id)  # type: ignore[arg-type]
+            display_content(content=content, request_id=request_id)
     st.session_state.messages.append(
         {"role": "assistant", "content": content, "request_id": request_id}
     )
@@ -100,9 +101,9 @@ def display_content(
                 with st.spinner("Running SQL..."):
                     df = pd.read_sql(item["statement"], st.session_state.CONN)
                     if len(df.index) > 1:
-                        data_tab, line_tab, bar_tab = st.tabs(
-                            ["Data", "Line Chart", "Bar Chart"]
-                        )
+                        data_tab, line_tab, bar_tab = st.tabs([
+                            "Data", "Line Chart", "Bar Chart"
+                        ])
                         data_tab.dataframe(df)
                         if len(df.columns) > 1:
                             df = df.set_index(df.columns[0])
